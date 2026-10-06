@@ -1,0 +1,420 @@
+{
+ "SECONDS_PER_REP": 3.0,
+ "REST_MET": 1.3,
+ "KCAL_PER_KG_FAT": 7700,
+ "ACTIVITY_FACTORS": {
+  "sedentario": 1.2,
+  "ligero": 1.375,
+  "moderado": 1.55,
+  "activo": 1.725,
+  "muy_activo": 1.9
+ },
+ "LEVEL_ORDER": {
+  "principiante": 0,
+  "intermedio": 1,
+  "avanzado": 2
+ },
+ "IMPACT_ORDER": {
+  "bajo": 0,
+  "medio": 1,
+  "alto": 2
+ },
+ "SLOTS": {
+  "rodilla": {
+   "targets": [
+    "quads",
+    "glutes"
+   ],
+   "kw": [
+    "squat",
+    "leg press",
+    "lunge",
+    "step-up",
+    "step up",
+    "split squat"
+   ],
+   "label": "Dominante de rodilla"
+  },
+  "cadera": {
+   "targets": [
+    "glutes",
+    "hamstrings"
+   ],
+   "kw": [
+    "deadlift",
+    "hip thrust",
+    "bridge",
+    "good morning",
+    "leg curl",
+    "swing",
+    "hip extension"
+   ],
+   "label": "Dominante de cadera"
+  },
+  "empuje_h": {
+   "targets": [
+    "pectorals"
+   ],
+   "kw": [
+    "press",
+    "push-up",
+    "push up"
+   ],
+   "label": "Empuje horizontal"
+  },
+  "empuje_v": {
+   "targets": [
+    "delts"
+   ],
+   "kw": [
+    "press",
+    "raise"
+   ],
+   "label": "Hombro"
+  },
+  "tiron_h": {
+   "targets": [
+    "upper back",
+    "lats"
+   ],
+   "kw": [
+    "row"
+   ],
+   "label": "Tirón horizontal"
+  },
+  "tiron_v": {
+   "targets": [
+    "lats"
+   ],
+   "kw": [
+    "pulldown",
+    "pull-up",
+    "pull up",
+    "chin"
+   ],
+   "label": "Tirón vertical"
+  },
+  "biceps": {
+   "targets": [
+    "biceps"
+   ],
+   "kw": [
+    "curl"
+   ],
+   "label": "Bíceps"
+  },
+  "triceps": {
+   "targets": [
+    "triceps"
+   ],
+   "kw": [
+    "extension",
+    "pushdown",
+    "push down",
+    "kickback",
+    "press"
+   ],
+   "label": "Tríceps"
+  },
+  "gemelos": {
+   "targets": [
+    "calves"
+   ],
+   "kw": [
+    "calf",
+    "raise"
+   ],
+   "label": "Pantorrillas"
+  },
+  "core": {
+   "targets": [
+    "abs"
+   ],
+   "kw": [
+    "plank",
+    "crunch",
+    "dead bug",
+    "bird dog",
+    "sit-up",
+    "leg raise",
+    "twist",
+    "bridge",
+    "roll",
+    "v-up",
+    "hollow"
+   ],
+   "label": "Core"
+  },
+  "cardio": {
+   "targets": [
+    "cardiovascular system"
+   ],
+   "kw": [],
+   "label": "Cardio"
+  }
+ },
+ "TEMPLATES": {
+  "full_a": {
+   "name": "Cuerpo completo A",
+   "slots": [
+    "rodilla",
+    "empuje_h",
+    "tiron_v",
+    "cadera",
+    "empuje_v",
+    "core",
+    "cardio"
+   ]
+  },
+  "full_b": {
+   "name": "Cuerpo completo B",
+   "slots": [
+    "cadera",
+    "tiron_h",
+    "rodilla",
+    "empuje_h",
+    "biceps",
+    "triceps",
+    "core",
+    "cardio"
+   ]
+  },
+  "superior": {
+   "name": "Tren superior",
+   "slots": [
+    "empuje_h",
+    "tiron_h",
+    "empuje_v",
+    "tiron_v",
+    "biceps",
+    "triceps",
+    "core"
+   ]
+  },
+  "inferior": {
+   "name": "Tren inferior",
+   "slots": [
+    "rodilla",
+    "cadera",
+    "rodilla",
+    "cadera",
+    "gemelos",
+    "core",
+    "cardio"
+   ]
+  },
+  "cardio_core": {
+   "name": "Cardio + core",
+   "slots": [
+    "cardio",
+    "core",
+    "core",
+    "core",
+    "cardio"
+   ]
+  },
+  "circuito": {
+   "name": "Circuito metabólico",
+   "slots": [
+    "rodilla",
+    "empuje_h",
+    "tiron_h",
+    "cadera",
+    "core",
+    "cardio"
+   ]
+  }
+ },
+ "STAPLES": {
+  "rodilla": [
+   "1760",
+   "0739",
+   "0413",
+   "0770",
+   "0431",
+   "2287",
+   "3132",
+   "1685",
+   "0043",
+   "0336",
+   "2368"
+  ],
+  "cadera": [
+   "1459",
+   "0599",
+   "0586",
+   "1409",
+   "3013",
+   "0196",
+   "0130",
+   "0549",
+   "0085",
+   "0032",
+   "3561"
+  ],
+  "empuje_h": [
+   "0577",
+   "0289",
+   "0493",
+   "0314",
+   "0596",
+   "0188",
+   "0025",
+   "0662",
+   "3785"
+  ],
+  "empuje_v": [
+   "0405",
+   "0603",
+   "0334",
+   "0178",
+   "0765",
+   "0426",
+   "0091"
+  ],
+  "tiron_h": [
+   "0861",
+   "1350",
+   "0292",
+   "0293",
+   "0581",
+   "0180",
+   "2298",
+   "0027"
+  ],
+  "tiron_v": [
+   "0198",
+   "0579",
+   "0150",
+   "0017",
+   "1013",
+   "0974",
+   "2330"
+  ],
+  "biceps": [
+   "0294",
+   "0313",
+   "0868",
+   "0285",
+   "0447",
+   "0031"
+  ],
+  "triceps": [
+   "0200",
+   "0201",
+   "0241",
+   "2188",
+   "0333",
+   "0194",
+   "0129"
+  ],
+  "gemelos": [
+   "0605",
+   "0417",
+   "1373",
+   "0594",
+   "2289",
+   "1490"
+  ],
+  "core": [
+   "0276",
+   "0175",
+   "1452",
+   "0872",
+   "0274",
+   "3239",
+   "0705",
+   "2135"
+  ],
+  "cardio": [
+   "3666",
+   "2141",
+   "2138",
+   "0798",
+   "2331",
+   "2311",
+   "0630",
+   "2612",
+   "0685",
+   "1160"
+  ]
+ },
+ "WALK_ID": "3666",
+ "ODD_KW": [
+  "one arm",
+  "one leg",
+  "single",
+  "on exercise ball",
+  "stability ball",
+  "bosu",
+  "with ",
+  "(",
+  "v. ",
+  "stork",
+  "twist",
+  "reverse grip",
+  "behind neck",
+  "pov",
+  "male",
+  "female"
+ ],
+ "PHASES": {
+  "adaptacion": {
+   "name": "Fase 1 · Adaptación",
+   "tip": "Técnica y constancia. Esfuerzo percibido (RPE) 5-6 sobre 10, deja 3-4 repeticiones en reserva. Prioriza cardio de bajo impacto (caminar inclinado, bici, elíptica)."
+  },
+  "progresion": {
+   "name": "Fase 2 · Progresión",
+   "tip": "Sube 1-2 repeticiones por serie o un 2,5-5 % de carga cuando completes todas las series con buena técnica. RPE 7-8. Añade 5 min a los bloques de cardio."
+  },
+  "consolidacion": {
+   "name": "Fase 3 · Consolidación",
+   "tip": "Mantén la intensidad alcanzada, introduce intervalos moderados si las articulaciones lo toleran y prepara el siguiente plan."
+  },
+  "finalizado": {
+   "name": "Plan finalizado",
+   "tip": "Revisa tu progreso y crea un nuevo plan con objetivos actualizados."
+  }
+ },
+ "WEEK_LAYOUTS": {
+  "2": {
+   "0": "full_a",
+   "3": "full_b"
+  },
+  "3": {
+   "0": "full_a",
+   "2": "full_b",
+   "4": "cardio_core"
+  },
+  "4": {
+   "0": "full_a",
+   "1": "cardio_core",
+   "3": "full_b",
+   "5": "circuito"
+  },
+  "5": {
+   "0": "full_a",
+   "1": "cardio_core",
+   "2": "full_b",
+   "4": "circuito",
+   "5": "cardio_core"
+  },
+  "6": {
+   "0": "superior",
+   "1": "cardio_core",
+   "2": "inferior",
+   "3": "circuito",
+   "4": "full_a",
+   "5": "cardio_core"
+  },
+  "7": {
+   "0": "superior",
+   "1": "cardio_core",
+   "2": "inferior",
+   "3": "circuito",
+   "4": "full_a",
+   "5": "cardio_core",
+   "6": "cardio_core"
+  }
+ }
+}
