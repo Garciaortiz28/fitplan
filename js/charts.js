@@ -156,7 +156,8 @@ export function lineChart(el, points, opts = {}) {
     const iw = W - m.l - m.r, ih = height - m.t - m.b;
     const ts = points.map((p) => new Date(p.x + "T12:00:00").getTime());
     let t0 = Math.min(...ts), t1 = Math.max(...ts);
-    if (t0 === t1) { t0 -= 86400000 * 3; t1 += 86400000 * 3; }
+    // Rango mínimo de 6 días para que las etiquetas de fecha no se repitan.
+    if (t1 - t0 < 6 * 86400000) { const c = (t0 + t1) / 2; t0 = c - 3 * 86400000; t1 = c + 3 * 86400000; }
     const vals = points.map((p) => p.y).concat(goal != null ? [goal] : []);
     let lo = Math.min(...vals), hi = Math.max(...vals);
     const padV = Math.max(1, (hi - lo) * 0.15);
@@ -207,6 +208,73 @@ export function lineChart(el, points, opts = {}) {
       const rows = points[bi].rows || [[unit || "Valor", `${f(points[bi].y)}${unit ? " " + unit : ""}`]];
       showTip(e, tipHTML(fmt.date(points[bi].x), rows));
     }, () => { cross.setAttribute("opacity", 0); dot.setAttribute("opacity", 0); });
+    el.replaceChildren(s);
+  });
+}
+
+/**
+ * Varias series temporales con escala común (p. ej. peso esperado vs. real).
+ * series: [{name, color, dashed, points:[{x:'AAAA-MM-DD', y}]}]; opts: {unit, height, decimals}
+ */
+export function multiLineChart(el, series, opts = {}) {
+  const { unit = "", height = 260 } = opts;
+  el.classList.add("chart");
+  const all = series.flatMap((s) => s.points);
+  if (!all.length) { el.innerHTML = `<div class="chart-empty">${esc(opts.empty || "Sin datos todavía.")}</div>`; return; }
+  const f = opts.decimals ? fmt.dec : fmt.int;
+  const T = (x) => new Date(x + "T12:00:00").getTime();
+  responsive(el, (W) => {
+    const m = { t: 30, r: 16, b: 26, l: 46 };
+    const iw = W - m.l - m.r, ih = height - m.t - m.b;
+    let t0 = Math.min(...all.map((p) => T(p.x))), t1 = Math.max(...all.map((p) => T(p.x)));
+    // Rango mínimo de 6 días para que las etiquetas de fecha no se repitan.
+    if (t1 - t0 < 6 * 86400000) { const c = (t0 + t1) / 2; t0 = c - 3 * 86400000; t1 = c + 3 * 86400000; }
+    let lo = Math.min(...all.map((p) => p.y)), hi = Math.max(...all.map((p) => p.y));
+    const pad = Math.max(0.5, (hi - lo) * 0.15);
+    lo = Math.floor(lo - pad); hi = Math.ceil(hi + pad);
+    const x = (t) => m.l + ((t - t0) / (t1 - t0)) * iw;
+    const y = (v) => m.t + ih - ((v - lo) / (hi - lo)) * ih;
+    const s = svg(W, height);
+    s.setAttribute("aria-label", opts.ariaLabel || "Gráfico de series");
+    for (let i = 0; i <= 4; i++) {
+      const v = lo + ((hi - lo) / 4) * i, yy = y(v);
+      node("line", { x1: m.l, x2: W - m.r, y1: yy, y2: yy, class: i ? "gridline" : "baseline" }, s);
+      node("text", { x: m.l - 8, y: yy + 4, "text-anchor": "end", class: "tick" }, s).textContent = f(v);
+    }
+    const nT = Math.max(2, Math.min(6, Math.floor(iw / 90)));
+    for (let i = 0; i < nT; i++) {
+      const t = t0 + ((t1 - t0) / (nT - 1)) * i;
+      node("text", { x: x(t), y: height - 8, "text-anchor": i === 0 ? "start" : i === nT - 1 ? "end" : "middle", class: "tick" }, s)
+        .textContent = new Date(t).toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+    }
+    // Leyenda (identidad nunca solo por color: cada serie tiene nombre y estilo de trazo).
+    let lx = m.l;
+    series.forEach((se) => {
+      node("line", { x1: lx, x2: lx + 22, y1: 10, y2: 10, stroke: se.color, "stroke-width": 2, "stroke-dasharray": se.dashed ? "5 4" : "" }, s);
+      const tx = node("text", { x: lx + 28, y: 14, class: "tick" }, s);
+      tx.textContent = se.name;
+      lx += 40 + se.name.length * 6.5;
+    });
+    series.forEach((se) => {
+      if (!se.points.length) return;
+      const d = se.points.map((p, i) => `${i ? "L" : "M"}${x(T(p.x)).toFixed(1)},${y(p.y).toFixed(1)}`).join("");
+      node("path", { d, fill: "none", stroke: se.color, "stroke-width": 2, "stroke-dasharray": se.dashed ? "6 4" : "", "stroke-linejoin": "round" }, s);
+      if (!se.dashed && se.points.length <= 40) se.points.forEach((p) => node("circle", { cx: x(T(p.x)), cy: y(p.y), r: 4, fill: se.color, stroke: "var(--surface)", "stroke-width": 2 }, s));
+    });
+    const cross = node("line", { y1: m.t, y2: m.t + ih, stroke: "var(--axis)", "stroke-width": 1, opacity: 0 }, s);
+    const hit = node("rect", { x: m.l, y: m.t, width: iw, height: ih, class: "hit" }, s);
+    bindTip(hit, (e) => {
+      const rect = s.getBoundingClientRect();
+      const mx = ((e.clientX - rect.left) / rect.width) * W;
+      const t = t0 + ((mx - m.l) / iw) * (t1 - t0);
+      cross.setAttribute("x1", mx); cross.setAttribute("x2", mx); cross.setAttribute("opacity", 1);
+      const rows = series.map((se) => {
+        if (!se.points.length) return [se.name, "–"];
+        const near = se.points.reduce((b, p) => (Math.abs(T(p.x) - t) < Math.abs(T(b.x) - t) ? p : b));
+        return [se.name, Math.abs(T(near.x) - t) < 5 * 86400000 ? `${f(near.y)}${unit ? " " + unit : ""}` : "–"];
+      });
+      showTip(e, tipHTML(new Date(t).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" }), rows));
+    }, () => cross.setAttribute("opacity", 0));
     el.replaceChildren(s);
   });
 }

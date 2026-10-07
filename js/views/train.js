@@ -1,5 +1,5 @@
 import { api, store, refreshProfile } from "../api.js";
-import { esc, fmt, toast, todayISO, debounce, emptyState, ICON } from "../util.js";
+import { esc, fmt, toast, todayISO, parseISO, debounce, emptyState, ICON } from "../util.js";
 import { openPicker, openExerciseDetail } from "../components.js";
 import { guard, navigate } from "../app.js";
 
@@ -16,7 +16,7 @@ export async function render(el, r) {
   const q = r.query;
   const [routines, plans] = await Promise.all([api.get("/api/routines"), api.get("/api/plans")]);
   const active = plans.find((p) => p.active);
-  const todayWd = (new Date().getDay() + 6) % 7;
+  const todayWd = (parseISO(todayISO()).getDay() + 6) % 7;
   const scheduledId = active?.schedule?.[String(todayWd)] || null;
 
   let editingId = null;

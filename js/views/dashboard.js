@@ -3,9 +3,15 @@ import { esc, fmt, cap, ICON } from "../util.js";
 import { barChart } from "../charts.js";
 import { renderBodyMap } from "../bodymap.js";
 import { statTile, prescriptionText } from "../components.js";
+import { loadNutritionContext } from "../nutrictx.js";
+import { daysBetween } from "../util.js";
 
 export async function render(el) {
-  const d = await api.get("/api/dashboard");
+  const [d, nx, weights] = await Promise.all([
+    api.get("/api/dashboard"),
+    loadNutritionContext().catch(() => null),
+    api.get("/api/weights"),
+  ]);
   const { plan, guidance: g, week: w, metrics: mt } = d;
   const name = d.profile.name ? `, ${esc(d.profile.name)}` : "";
   const startW = plan?.start_weight;
@@ -45,6 +51,9 @@ export async function render(el) {
         foot: `${fmt.int(w.minutes)} min de ${w.targets.minutes ? fmt.int(w.targets.minutes) : "–"} objetivo`,
       })}
     </div>
+
+    ${weighReminder(weights, d.today)}
+    ${nx ? nutritionCard(nx) : ""}
 
     <div class="grid cols-3" style="margin-bottom:16px">
       <div class="card span-2" id="todayCard"></div>
@@ -122,4 +131,34 @@ export async function render(el) {
     rows: [["Calorías", `${fmt.int(h.kcal)} kcal`], ["Minutos", fmt.int(h.minutes)], ["Sesiones", h.sessions]],
   })), { color: "var(--kcal)", target: w.targets.kcal, targetLabel: "Objetivo", ariaLabel: "Calorías por semana" });
   renderBodyMap(el.querySelector("#bodyMap"), w.regions);
+}
+
+/** Recordatorio de pesaje semanal: la app afina las metas con tus pesos. */
+function weighReminder(weights, today) {
+  const last = weights[weights.length - 1];
+  const days = last ? daysBetween(last.date, today) : null;
+  if (days != null && days < 7) return "";
+  return `<div class="callout" style="margin-bottom:16px"><span class="status warning">Pesaje semanal</span>
+    ${days == null ? "Aún no has registrado tu peso." : `Tu último pesaje fue hace ${days} días.`}
+    Pésate en ayunas y regístralo: así la app compara el peso real con el esperado y ajusta tus metas.
+    <a href="#/progreso">Registrar peso</a></div>`;
+}
+
+/** Resumen de nutrición del día y balance con el entrenamiento. */
+function nutritionCard(nx) {
+  const t = nx.targets, s = nx.state;
+  if (!t.ok) return `<div class="card callout accent" style="margin-bottom:16px"><b>Nutrición:</b> ${esc(t.reason)} <a href="#/plan">Completar perfil</a></div>`;
+  const spent = t.base + nx.exerciseToday;
+  const bal = Math.round(s.tot.kcal - spent);
+  return `<div class="card" style="margin-bottom:16px">
+    <div class="card-head"><div><h2>Nutrición de hoy</h2><div class="sub">Comida y entrenamiento conectados: balance = consumido − gastado</div></div>
+      <a class="btn sm primary" href="#/comer">${ICON.plus}Registrar comida</a></div>
+    <div class="kv">
+      <div><div class="k">Consumido</div><div class="v">${fmt.int(s.tot.kcal)} / ${fmt.int(t.kcal)} kcal</div></div>
+      <div><div class="k">Te quedan</div><div class="v">${fmt.int(Math.max(0, s.remaining))} kcal</div></div>
+      <div><div class="k">Proteína</div><div class="v">${fmt.int(s.tot.prot)} / ${t.prot} g</div></div>
+      <div><div class="k">Gastado hoy</div><div class="v">${fmt.int(spent)} kcal</div></div>
+      <div><div class="k">Balance</div><div class="v">${bal > 0 ? "+" : ""}${fmt.int(bal)} kcal</div></div>
+      <div><div class="k">Pérdida prevista</div><div class="v">${fmt.dec(t.expectedWeeklyLoss)} kg/sem</div></div>
+    </div></div>`;
 }

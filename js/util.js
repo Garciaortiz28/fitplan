@@ -37,11 +37,24 @@ export function parseISO(iso) {
 export function toISO(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
-export const todayISO = () => toISO(new Date());
+// Fecha y hora oficiales de Colombia (UTC-5, sin horario de verano), sin importar la zona del dispositivo.
+const CO_FMT = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit",
+  hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+});
+export function nowCO() {
+  const p = Object.fromEntries(CO_FMT.formatToParts(new Date()).map((x) => [x.type, x.value]));
+  const time = `${p.hour}:${p.minute}`;
+  return { date: `${p.year}-${p.month}-${p.day}`, time, minutes: Number(p.hour) * 60 + Number(p.minute) };
+}
+export const todayISO = () => nowCO().date;
 export function addDays(iso, n) {
   const d = parseISO(iso);
   d.setDate(d.getDate() + n);
   return toISO(d);
+}
+export function daysBetween(a, b) {
+  return Math.round((parseISO(b) - parseISO(a)) / 86400000);
 }
 export function weekStartISO(iso) {
   const d = parseISO(iso);

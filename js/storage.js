@@ -3,7 +3,7 @@
 
 const DB_NAME = "fitplan";
 const STORE = "kv";
-const KEYS = ["profile", "plans", "routines", "sessions", "weights", "seq", "meta"];
+const KEYS = ["profile", "plans", "routines", "sessions", "weights", "seq", "meta", "foodlog", "customFoods", "nsettings"];
 
 export const DEFAULT_PROFILE = () => ({
   id: 1, name: "", sex: "", age: null, height_cm: null, weight_kg: null, activity: "sedentario",
@@ -12,8 +12,9 @@ export const DEFAULT_PROFILE = () => ({
 
 export const S = {
   profile: DEFAULT_PROFILE(), plans: [], routines: [], sessions: [], weights: [],
-  seq: { plan: 0, routine: 0, session: 0, item: 0, entry: 0 },
+  seq: { plan: 0, routine: 0, session: 0, item: 0, entry: 0, food: 0, custom: 0 },
   meta: { last_export: null, created_at: null },
+  foodlog: [], customFoods: [], nsettings: null,
 };
 
 let dbp = null;

@@ -267,6 +267,83 @@ function activateLatestIfNone() {
   }
 }
 
+// ------------------------------------------------------------------ nutrición
+// Misma lógica y mensajes que app/server.py.
+const MEALS = ["desayuno", "almuerzo", "comida", "extra"];
+const FOOD_ROLES = ["almidon", "proteina", "verdura", "fruta", "lacteo", "grasa", "dulce", "bebida", "leguminosa", "plato", "otro"];
+const FOOD_FLAGS = ["antojo", "alcohol", "procesado", "carne_roja", "frito", "pesado", "azucar"];
+const TIME_RX = /^([01]\d|2[0-3]):[0-5]\d$/;
+const NUTRITION_DEFAULTS = {
+  wake: "07:00", sleep: "23:00", meals: { desayuno: "07:30", almuerzo: "13:00", comida: "19:30" },
+  split: { desayuno: 27, almuerzo: 38, comida: 25, extra: 10 }, pace: "moderado", protein_g_per_kg: 1.6, fat_pct: 30, adaptive: true,
+};
+
+function time(d, key, def = null) {
+  const v = d?.[key] || def;
+  if (!v || !TIME_RX.test(String(v))) fail(`Hora no válida en «${key}» (formato HH:MM).`);
+  return String(v);
+}
+function flagsOf(v) {
+  if (!Array.isArray(v) || v.some((f) => !FOOD_FLAGS.includes(f))) fail("Etiquetas de alimento no válidas.");
+  return [...new Set(v)].sort();
+}
+function validateFoodLog(d) {
+  return {
+    date: isoDate(d, "date"), time: time(d, "time", "12:00"), meal: choice(d, "meal", MEALS, "extra"),
+    food_id: text(d, "food_id", 60), name: text(d, "name", 120, { required: true }),
+    grams: num(d, "grams", 0.1, 5000, { required: true }), kcal: num(d, "kcal", 0, 10000, { required: true }),
+    prot: num(d, "prot", 0, 1000, { def: 0 }), fat: num(d, "fat", 0, 1000, { def: 0 }), carb: num(d, "carb", 0, 1000, { def: 0 }),
+    fiber: num(d, "fiber", 0, 500, { def: 0 }), flags: flagsOf(d.flags || []), notes: text(d, "notes", 500),
+  };
+}
+function validateCustomFood(d) {
+  const barcode = text(d, "barcode", 32);
+  if (barcode && !/^\d+$/.test(barcode)) fail("El código de barras solo puede contener números.");
+  const out = {
+    name: text(d, "name", 120, { required: true }), brand: text(d, "brand", 80), barcode,
+    kcal: num(d, "kcal", 0, 950, { required: true }), prot: num(d, "prot", 0, 100, { def: 0 }), fat: num(d, "fat", 0, 100, { def: 0 }),
+    carb: num(d, "carb", 0, 100, { def: 0 }), fiber: num(d, "fiber", 0, 100, { def: 0 }), unit_name: text(d, "unit_name", 40),
+    unit_grams: num(d, "unit_grams", 0.1, 5000), role: choice(d, "role", FOOD_ROLES, "otro"), flags: flagsOf(d.flags || []),
+    source: choice(d, "source", ["manual", "off"], "manual"),
+  };
+  if (out.prot + out.fat + out.carb > 100.5) fail("Proteína + grasa + carbohidratos no pueden superar 100 g por cada 100 g.");
+  return out;
+}
+function validateNutritionSettings(d) {
+  const meals = d.meals || {}, split = d.split || {};
+  const out = {
+    wake: time(d, "wake"), sleep: time(d, "sleep"),
+    meals: Object.fromEntries(["desayuno", "almuerzo", "comida"].map((m) => [m, time(meals, m)])),
+    split: Object.fromEntries(MEALS.map((m) => [m, num(split, m, 0, 100, { required: true, integer: true })])),
+    pace: choice(d, "pace", ["suave", "moderado", "rapido"], "moderado"),
+    protein_g_per_kg: num(d, "protein_g_per_kg", 1.0, 2.5, { required: true }),
+    fat_pct: num(d, "fat_pct", 20, 40, { required: true, integer: true }), adaptive: !!d.adaptive,
+  };
+  if (Object.values(out.split).reduce((a, b) => a + b, 0) !== 100) fail("El reparto de calorías entre comidas debe sumar 100 %.");
+  if (!(out.meals.desayuno < out.meals.almuerzo && out.meals.almuerzo < out.meals.comida)) fail("Las horas de las comidas deben ir en orden: desayuno, almuerzo y comida.");
+  return out;
+}
+const sortLog = () => S.foodlog.sort((a, b) => (a.date + a.time + String(a.id).padStart(9, "0") < b.date + b.time + String(b.id).padStart(9, "0") ? -1 : 1));
+
+function dailyIntake(start, end) {
+  const out = {};
+  for (const l of S.foodlog) {
+    if (l.date < start || l.date > end) continue;
+    const d = (out[l.date] ||= { kcal: 0, prot: 0, fat: 0, carb: 0, fiber: 0, items: 0 });
+    d.kcal += l.kcal; d.prot += l.prot; d.fat += l.fat; d.carb += l.carb; d.fiber += l.fiber; d.items += 1;
+  }
+  return out;
+}
+function dailyExercise(start, end) {
+  const out = {};
+  for (const s of S.sessions) {
+    if (s.date < start || s.date > end) continue;
+    const d = (out[s.date] ||= { kcal: 0, minutes: 0, sessions: 0 });
+    d.kcal += s.kcal; d.minutes += s.duration_min; d.sessions += 1;
+  }
+  return out;
+}
+
 // --------------------------------------------------------- copias (formato del PC)
 function exportAll() {
   const plans = [], schedule = [], routines = [], items = [], sessions = [], entries = [];
@@ -291,6 +368,10 @@ function exportAll() {
     tables: {
       profile: [{ ...p, equipment: JSON.stringify(p.equipment || []), low_impact: p.low_impact ? 1 : 0 }],
       plans, routines, routine_items: items, schedule, sessions, session_entries: entries, weights: structuredClone(S.weights),
+      // Mismo formato que la base SQLite del PC (las etiquetas se guardan como texto JSON).
+      food_log: S.foodlog.map((l) => ({ ...l, flags: JSON.stringify(l.flags || []) })),
+      custom_foods: S.customFoods.map((c) => ({ ...c, flags: JSON.stringify(c.flags || []) })),
+      settings: [{ key: "schema_version", value: "2" }, ...(S.nsettings ? [{ key: "nutrition", value: JSON.stringify(S.nsettings) }] : [])],
     },
   };
 }
@@ -317,12 +398,20 @@ function importAll(data) {
     sessions.find((s) => s.id === e.session_id)?.entries.push(e);
   }
   const maxId = (xs) => xs.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0);
+  const parseFlags = (v) => { if (Array.isArray(v)) return v; try { return JSON.parse(v || "[]"); } catch { return []; } };
+  const foodlog = arr("food_log").map((l) => ({ ...l, flags: parseFlags(l.flags) }));
+  const customFoods = arr("custom_foods").map((c) => ({ ...c, flags: parseFlags(c.flags) }));
+  let nsettings = null;
+  const ns = arr("settings").find((r) => r.key === "nutrition");
+  if (ns) { try { nsettings = typeof ns.value === "string" ? JSON.parse(ns.value) : ns.value; } catch { nsettings = null; } }
   Object.assign(S, {
-    profile, plans, routines, sessions,
+    profile, plans, routines, sessions, foodlog, customFoods, nsettings,
     weights: arr("weights").map((w) => ({ date: w.date, weight_kg: w.weight_kg, waist_cm: w.waist_cm ?? null, note: w.note || "" })),
-    seq: { plan: maxId(plans), routine: maxId(routines), session: maxId(sessions), item: maxId(arr("routine_items")), entry: maxId(arr("session_entries")) },
+    seq: { plan: maxId(plans), routine: maxId(routines), session: maxId(sessions), item: maxId(arr("routine_items")),
+      entry: maxId(arr("session_entries")), food: maxId(foodlog), custom: maxId(customFoods) },
   });
   sortWeights();
+  sortLog();
 }
 
 // ------------------------------------------------------------------ rutas
@@ -498,8 +587,67 @@ route("GET", "/api/backup", async () => {
 });
 route("POST", "/api/restore", async (q, b) => {
   importAll(b);
-  await save("profile", "plans", "routines", "sessions", "weights", "seq");
+  await save("profile", "plans", "routines", "sessions", "weights", "seq", "foodlog", "customFoods", "nsettings");
   return { ok: true };
+});
+
+route("GET", "/api/foodlog", (q) => {
+  const start = isoDate({ d: q.get("from") || E.todayISO() }, "d");
+  const end = isoDate({ d: q.get("to") || start }, "d");
+  return structuredClone(S.foodlog.filter((l) => l.date >= start && l.date <= end));
+});
+route("POST", "/api/foodlog", async (q, b) => {
+  const l = { id: nextId("food"), ...validateFoodLog(b), created_at: nowStamp() };
+  S.foodlog.push(l);
+  sortLog();
+  await save("foodlog", "seq");
+  return structuredClone(l);
+});
+route("PUT", "/api/foodlog/(\\d+)", async (q, b, id) => {
+  const l = S.foodlog.find((x) => x.id === Number(id));
+  if (!l) fail("Registro no encontrado.");
+  Object.assign(l, validateFoodLog(b));
+  sortLog();
+  await save("foodlog");
+  return structuredClone(l);
+});
+route("DELETE", "/api/foodlog/(\\d+)", async (q, b, id) => {
+  S.foodlog = S.foodlog.filter((l) => l.id !== Number(id));
+  await save("foodlog");
+  return { ok: true };
+});
+route("GET", "/api/foods/custom", () => structuredClone([...S.customFoods].sort((a, b) => a.name.localeCompare(b.name, "es", { sensitivity: "base" }))));
+route("POST", "/api/foods/custom", async (q, b) => {
+  const d = validateCustomFood(b);
+  if (d.barcode && S.customFoods.some((c) => c.barcode === d.barcode)) fail("Ya tienes un alimento guardado con ese código de barras.");
+  const c = { id: nextId("custom"), ...d, created_at: nowStamp() };
+  S.customFoods.push(c);
+  await save("customFoods", "seq");
+  return structuredClone(c);
+});
+route("PUT", "/api/foods/custom/(\\d+)", async (q, b, id) => {
+  const c = S.customFoods.find((x) => x.id === Number(id));
+  if (!c) fail("Alimento no encontrado.");
+  Object.assign(c, validateCustomFood(b));
+  await save("customFoods");
+  return structuredClone(c);
+});
+route("DELETE", "/api/foods/custom/(\\d+)", async (q, b, id) => {
+  S.customFoods = S.customFoods.filter((c) => c.id !== Number(id));
+  await save("customFoods");
+  return { ok: true };
+});
+route("GET", "/api/nutrition/settings", () => ({ ...structuredClone(NUTRITION_DEFAULTS), ...(S.nsettings ? structuredClone(S.nsettings) : {}) }));
+route("PUT", "/api/nutrition/settings", async (q, b) => {
+  S.nsettings = validateNutritionSettings(b);
+  await save("nsettings");
+  return structuredClone(S.nsettings);
+});
+route("GET", "/api/energy", (q) => {
+  const end = isoDate({ d: q.get("to") || E.todayISO() }, "d");
+  const start = isoDate({ d: q.get("from") || E.isoFromDayNum(E.dayNum(end) - 27) }, "d");
+  return { from: start, to: end, intake: dailyIntake(start, end), exercise: dailyExercise(start, end),
+    weights: structuredClone(S.weights), today: E.todayISO() };
 });
 
 /** Punto de entrada: mismo contrato que fetch() contra el servidor del PC. */

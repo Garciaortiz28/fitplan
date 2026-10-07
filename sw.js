@@ -1,7 +1,7 @@
 // Service worker de FitPlan: la app funciona sin conexión.
 // - La interfaz y el catálogo se guardan en la instalación (caché versionada).
 // - Imágenes y animaciones se guardan al verlas (caché persistente entre versiones).
-const VERSION = "e38a45bbe94f";
+const VERSION = "0051ef496ea4";
 const SHELL_CACHE = `fitplan-shell-${VERSION}`;
 const MEDIA_CACHE = "fitplan-media-v1";
 const SHELL = [
@@ -11,6 +11,7 @@ const SHELL = [
  "./css/styles.css",
  "./data/catalog.json",
  "./data/engine.json",
+ "./data/foods.json",
  "./icons/apple-touch-icon.png",
  "./icons/icon-192.png",
  "./icons/icon-512.png",
@@ -21,16 +22,23 @@ const SHELL = [
  "./js/charts.js",
  "./js/components.js",
  "./js/engine.js",
+ "./js/foodui.js",
  "./js/localapi.js",
+ "./js/nutri.js",
+ "./js/nutrictx.js",
  "./js/storage.js",
  "./js/util.js",
+ "./js/views/alimentos.js",
  "./js/views/catalog.js",
+ "./js/views/comer.js",
  "./js/views/dashboard.js",
+ "./js/views/nutricion.js",
  "./js/views/plan.js",
  "./js/views/progress.js",
  "./js/views/routines.js",
  "./js/views/train.js",
- "./js/views/week.js"
+ "./js/views/week.js",
+ "./vendor/html5-qrcode.min.js"
 ];
 
 self.addEventListener("install", (event) => {

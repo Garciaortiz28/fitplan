@@ -11,7 +11,17 @@ const VIEWS = {
   semana: () => import("./views/week.js"),
   progreso: () => import("./views/progress.js"),
   plan: () => import("./views/plan.js"),
+  comer: () => import("./views/comer.js"),
+  alimentos: () => import("./views/alimentos.js"),
+  nutricion: () => import("./views/nutricion.js"),
 };
+
+// Secciones con pestañas (en el móvil se muestran como sub-navegación).
+const GROUPS = {
+  entreno: [["entrenar", "Entrenar"], ["rutinas", "Rutinas"], ["ejercicios", "Ejercicios"], ["semana", "Semana"]],
+  nutri: [["comer", "Hoy"], ["alimentos", "Alimentos"], ["nutricion", "Historial"]],
+};
+const groupOf = (name) => Object.keys(GROUPS).find((g) => GROUPS[g].some(([k]) => k === name));
 
 // Protección ante cambios sin guardar (la activan las vistas de edición).
 export const guard = { dirty: false, message: "Tienes cambios sin guardar. ¿Salir de todos modos?" };
@@ -43,7 +53,11 @@ async function route() {
     return;
   }
   const loader = VIEWS[r.name] || VIEWS.inicio;
-  $$("#nav a").forEach((a) => a.classList.toggle("active", a.dataset.route === r.name));
+  const group = groupOf(r.name);
+  $$("#nav a").forEach((a) => {
+    a.classList.toggle("active", a.dataset.route === r.name);
+    a.classList.toggle("group-active", !!group && a.dataset.group === group && a.classList.contains("primary"));
+  });
   const view = $("#view");
   const seq = ++renderSeq;
   view.innerHTML = `<div class="loading">Cargando…</div>`;
@@ -53,6 +67,12 @@ async function route() {
     const container = document.createElement("div");
     view.replaceChildren(container);
     await mod.render(container, r);
+    if (group && seq === renderSeq) {
+      const sub = document.createElement("nav");
+      sub.className = "subnav";
+      sub.innerHTML = GROUPS[group].map(([k, l]) => `<a href="#/${k}" class="${k === r.name ? "on" : ""}">${esc(l)}</a>`).join("");
+      view.prepend(sub);
+    }
     window.scrollTo(0, 0);
   } catch (err) {
     console.error(err);

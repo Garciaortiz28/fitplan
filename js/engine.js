@@ -100,9 +100,9 @@ export function bodyMetrics(profile, w) {
 // --------------------------------------------------------------- fechas
 export const dayNum = (iso) => { const [y, m, d] = iso.split("-").map(Number); return Date.UTC(y, m - 1, d) / 86400000; };
 export const isoFromDayNum = (n) => new Date(n * 86400000).toISOString().slice(0, 10);
+// Fecha oficial de Colombia (UTC-5 fijo), igual que el servidor del PC.
 export function todayISO() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return new Date(Date.now() - 5 * 3600 * 1000).toISOString().slice(0, 10);
 }
 export const weekdayOf = (iso) => (((dayNum(iso) + 3) % 7) + 7) % 7; // 1970-01-01 fue jueves -> lunes = 0
 export const weekStart = (iso) => isoFromDayNum(dayNum(iso) - weekdayOf(iso));

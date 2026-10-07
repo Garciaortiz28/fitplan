@@ -1,5 +1,5 @@
 import { api, store, refreshProfile } from "../api.js";
-import { esc, fmt, toast, todayISO, addDays, confirmDialog, ICON } from "../util.js";
+import { esc, fmt, toast, todayISO, parseISO, addDays, confirmDialog, ICON } from "../util.js";
 import { guard } from "../app.js";
 
 const ACTIVITY = {
@@ -135,7 +135,7 @@ export async function render(el, r) {
           <button class="btn" id="genAll">${ICON.spark}Generar rutinas y calendario</button>
           <button class="btn primary" id="saveSched">${ICON.check}Guardar calendario</button></div></div>
       <div class="day-sched">${store.meta.weekdays.map((d, i) => `
-        <div class="day ${i === (new Date().getDay() + 6) % 7 ? "today" : ""}"><b>${d}</b>
+        <div class="day ${i === (parseISO(todayISO()).getDay() + 6) % 7 ? "today" : ""}"><b>${d}</b>
           <select data-wd="${i}" aria-label="Rutina del ${d}"><option value="">Descanso</option>
             ${routines.map((rt) => `<option value="${rt.id}" ${plan?.schedule?.[i] === rt.id ? "selected" : ""}>${esc(rt.name)}</option>`).join("")}</select></div>`).join("")}
       </div>
